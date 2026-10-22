@@ -10,7 +10,7 @@ output:
 # Summary
 
 Analysis of CLB2 + ASH1, SUN4, SRL1, mRNAs by smFISH including bud segmentation.
-Population-level cell analysis in R started by EW on 8 July 2026, continued through 13 July 2026.
+Population-level cell analysis in R started by EW on 8 July 2026, continued through 22 October 2026.
 
 Goal is to produce figures summarising the dataset:
 
@@ -182,7 +182,9 @@ ggplot(data = mrna_alldata %>%
 ```
 
 
-## Count vs total cell area for WT 
+## Count vs total cell area 
+
+### For WT cells, replicates separate
 
 ```{r plot_countvsarea_WT, fig.height = 5, fig.width = 4}
 plot_count_vs_area_WT <- 
@@ -204,6 +206,8 @@ plot_count_vs_area_WT <-
 
 plot_count_vs_area_WT
 ```
+
+### For WT cells, replicates together, grid to visualise numbers
 
 ```{r plot_countvsarea_vsstrain_WTgrid, fig.height = 8, fig.width = 7}
 ggplot(data = mrna_alldata %>%
@@ -229,6 +233,7 @@ ggplot(data = mrna_alldata %>%
 
 ```
 
+### For all strains, replicates together
 
 ```{r plot_countvsarea_vsstrain, fig.width = 9}
 plot_countvsarea_vsstrain <- 
@@ -250,6 +255,103 @@ plot_countvsarea_vsstrain <-
        y = "mRNA count per cell")
 
 plot_countvsarea_vsstrain
+```
+
+## Nascent RNA vs strain
+
+### For both mother and bud, vs cell area 
+
+```{r plot_nascentvsarea_vsstrain, fig.width = 9}
+plot_nascentvsarea_vsstrain <- 
+  ggplot(data = mrna_alldata %>%
+           filter(
+             area_umsq > 4,
+             strain_nice %in% c("WT", "ssd1Δ", "mpt5∆", "she2∆", "she3∆")
+           ),
+         aes(x = area_umsq, y = nascent_RNAs)) +
+  geom_point(size = 0.1, colour = "grey50") +
+  geom_smooth(aes(colour = mRNA, fill = mRNA),
+              method = "gam",  se = TRUE) + 
+  facet_grid(mRNA ~ strain_nice, scales = "free_y") +
+  theme(panel.grid.major.y = element_line(colour = "grey80")) +
+  coord_cartesian(xlim = cell_area_limits, ylim = c(-1,26),
+                  expand = FALSE) +
+  scale_colour_mrna() + scale_fill_mrna() +
+  labs(x = "total cell area (um^2)",
+       y = "nascent mRNA count per cell")
+
+
+ggsave(filename = here::here("figure","plot_nascentvsarea_vsstrain.pdf"),
+       plot = plot_nascentvsarea_vsstrain,
+       width = unit(9, "in"),
+       height = unit(4.5, "in"),
+       device=cairo_pdf )
+
+plot_nascentvsarea_vsstrain
+```
+
+### Only in the mother, vs cell area
+
+```{r plot_nascentvsarea_nobud_vsstrain, fig.width = 9}
+plot_nascentvsarea_nobud_vsstrain <- 
+  ggplot(data = mrna_alldata %>%
+           filter(
+             area_umsq > 4,
+             strain_nice %in% c("WT", "ssd1Δ", "mpt5∆", "she2∆", "she3∆")
+           ),
+         aes(x = area_umsq, y = nascent_RNAs - nascent_RNAs_bud)) +
+  geom_point(size = 0.1, colour = "grey50") +
+  geom_smooth(aes(colour = mRNA, fill = mRNA),
+              method = "gam",  se = TRUE) + 
+  facet_grid(mRNA ~ strain_nice, scales = "free_y") +
+  theme(panel.grid.major.y = element_line(colour = "grey80")) +
+  coord_cartesian(xlim = cell_area_limits, ylim = c(-1,26),
+                  expand = FALSE) +
+  scale_colour_mrna() + scale_fill_mrna() +
+  labs(x = "total cell area (um^2)",
+       y = "nascent mRNA count per mother nucleus")
+
+
+ggsave(filename = here::here("figure","plot_nascentvsarea_nobud_vsstrain.pdf"),
+       plot = plot_nascentvsarea_nobud_vsstrain,
+       width = unit(9, "in"),
+       height = unit(4.5, "in"),
+       device=cairo_pdf )
+
+plot_nascentvsarea_nobud_vsstrain
+```
+
+
+### Only in the bud, vs bud area
+
+```{r plot_budnascentvsarea_vsstrain, fig.width = 9}
+plot_budnascentvsarea_vsstrain <- 
+  ggplot(data = mrna_alldata %>%
+           filter(
+             area_bud_umsq > 0,
+             strain_nice %in% c("WT", "ssd1Δ", "mpt5∆", "she2∆", "she3∆")
+           ),
+         aes(x = area_bud_umsq, y = nascent_RNAs_bud)) +
+  geom_point(size = 0.1, colour = "grey50") +
+  geom_smooth(aes(colour = mRNA, fill = mRNA),
+              method = "gam",  se = TRUE) + 
+  facet_grid(mRNA ~ strain_nice, scales = "free_y") +
+  theme(panel.grid.major.y = element_line(colour = "grey80")) +
+  coord_cartesian(xlim = bud_area_limits + c(0, 2), ylim = c(-1,26),
+                  expand = FALSE) +
+  scale_x_continuous(breaks = c(0,5,10,15)) + 
+  scale_colour_mrna() + scale_fill_mrna() +
+  labs(x = "bud area (um^2)",
+       y = "nascent mRNA count per bud")
+
+
+ggsave(filename = here::here("figure","plot_budnascentvsarea_vsstrain.pdf"),
+       plot = plot_budnascentvsarea_vsstrain,
+       width = unit(7, "in"),
+       height = unit(4.5, "in"),
+       device=cairo_pdf )
+
+plot_budnascentvsarea_vsstrain
 ```
 
 ## Count vs bud area for WT

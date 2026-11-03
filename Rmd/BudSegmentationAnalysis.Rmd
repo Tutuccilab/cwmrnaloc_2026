@@ -33,7 +33,6 @@ There are also many exploratory data analysis figures made, that do not appear i
 knitr::opts_chunk$set(echo = TRUE)
 library(here)
 library(tidyverse)
-library(ggbeeswarm)
 library(GGally)
 library(cowplot)
 library(tidymodels)
@@ -125,7 +124,7 @@ mrna_alldata <- here::here("data", "budSegmentationData20260311.csv") %>%
 
 mrna_alldata
 ```
-## Count assigned cells 
+## Count cells per replicate
 
 ```{r count_blankcells_by_replicate}
 mrna_alldata %>% 
@@ -144,8 +143,6 @@ mrna_alldata %>%
   count() %>%
   print(n = 30)
 ```
-
-There are very few cells so we do not need to worry about it.
 
 # Overview plots across strains
 
@@ -527,8 +524,6 @@ ggplot(data = mrna_alldata %>%
 
 ## Prop in bud vs prop of cell *area* in bud for relevant strains
 
-This is good. It might make even more sense to have proportion of *volume* not area.
-
 
 ```{r plot_propinbud_vsareainbud_WTgrid, fig.height = 8, fig.width = 7}
 ggplot(data = mrna_alldata %>%
@@ -709,9 +704,9 @@ ggplot(data = mrna_alldata %>%
 The idea is:
 
 - G1 cells have no bud and nucleus in mother, and few (<= 5) CLB2 + ASH1 mRNAs
-- S cells have small buds (under about 20 um^2) and only one nucleus, in mother
+- S cells have small buds (under 2 um^2) and only one nucleus, in mother
 - G2 cells have larger buds but only one nucleus, in mother
-- M cells have 2 nuclei in both bud and mother
+- M cells have 2 nuclei, one in the bud and one in the mother
 - some cells might be not assigned so "NA"
 
 Insisting on cells having the right number of nuclei should exclude cells that are not permeabilised, or that are otherwise strange and should not be counted.
@@ -751,7 +746,7 @@ mrna_alldata_wphase <-
           mother_nuclei_count == 1 & 
           nuclei_bud_count == 0 ~ 
           "G2",
-        area_bud_umsq > 2  & 
+        area_bud_umsq >= 2 & 
           mother_nuclei_count == 1 & 
           nuclei_bud_count == 1 ~ 
           "M",

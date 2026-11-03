@@ -1,7 +1,7 @@
 ---
-title: "Bud segmentation of mRNAs"
+title: "Bud segmentation analysis of mRNAs in yeast"
 author: "Edward Wallace"
-date: "2026-10-27"
+date: "2026-11-03"
 output: 
   html_document:
       toc: true
@@ -9,14 +9,25 @@ output:
 
 # Summary
 
-Analysis of CLB2 + ASH1, SUN4, SRL1, mRNAs by smFISH including bud segmentation.
-Population-level cell analysis in R started by EW on 8 July 2026, continued through 27 October 2026.
+Analysis of CLB2 + ASH1, SUN4, SRL1, mRNAs by smFISH including bud segmentation, in *Saccharomyces cerevisiae*.
+Population-level cell analysis in R started by EW on 8 July 2026, continued through November 2026.
 
-Goal is to produce figures summarising the dataset:
+Goal is to produce figures summarizing the dataset:
 
 - abundance and bud localization of mRNAs in wild-type
 - comparative bud localization in different strains
 - whatever cell statistics we need to support these arguments.
+
+This analysis contributes to figures in the manuscript:
+
+- Figure 2: SRL1 and SUN4 mRNAs have distinct abundance and localization patterns over the cell cycle.
+- Figure 3: SRL1 mRNA relies on She2, She3 and partially Ssd1 for its localization to the bud.
+- Figure 4. RNA abundance and localization vary smoothly depending on cell size and bud:total size ratio.
+- Figure S5: Statistical analysis of mRNA bud-localization of CLB2 + ASH1, SRL1, and SUN4 mRNA.
+- Figure S6: Nascent mRNA transcription in the SRL1 and SUN4 mother and bud nuclei is tightly coordinated with cell size.
+- Figure S7: SRL1 and SUN4 mRNA localization is not dependent on the complete Sec complex.
+
+There are also many exploratory data analysis figures made, that do not appear in the manuscript.
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -31,7 +42,6 @@ theme_set(theme_cowplot(font_size = 15) +
             theme(strip.background = element_blank())
 )
 
-# theme_figureout <- theme(strip.background = element_blank())
 ```
 
 
@@ -94,7 +104,7 @@ scale_fill_mrna <- function(...) {
 ```
 
 ```{r load_data}
-mrna_alldata <- here::here("data", "Mara_budSegmentationData20260311.csv") %>%
+mrna_alldata <- here::here("data", "budSegmentationData20260311.csv") %>%
   read_csv() %>%
   select(!starts_with("Unnamed") ) %>%
   select(!"condition + strain") %>%
@@ -461,6 +471,8 @@ plot_propinbud_replicates <-
 plot_propinbud_replicates
 
 ```
+
+
 
 
 ## Prop in bud vs bud size for WT
@@ -950,6 +962,16 @@ ggsave(here::here("figure","propmrna_by_cellcycle_phase_allstrains.pdf"),
 ```
 
 
+### Median stats to quote in text
+
+```{r medianbudloc_by_phase}
+mrna_alldata_wphase %>% 
+  filter(cell_cycle_phase != "G1", total_RNAs > 0) %>%
+  group_by(strain_nice, mRNA, cell_cycle_phase) %>% 
+  summarise(median(total_RNAs_bud / total_RNAs))
+```
+
+
 ### Analyse mRNA localization, by cell cycle phase, all strains and replicates
 
 
@@ -1049,6 +1071,49 @@ ggplot(data = mrna_alldata_wphase %>%
 
 ggsave(here::here("figure","propmrna_by_cellcycle_phase_statbyreplicate.pdf"),
        width = unit(9, "in"), height = unit(8, "in"),
+       device=cairo_pdf)
+```
+
+#### Plot sec72 vs wt with replicates,  mean by strain and t-test results highlighted
+
+```{r propmrna_by_cellcycle_phase_wtsec72_statbyreplicate, fig.height=7, fig.width=5}
+ggplot(data = mrna_alldata_wphase %>%
+         filter( strain_nice  %in% c("WT", "sec72∆"),
+                 cell_cycle_phase %in% c("S", "G2", "M"),
+                 total_RNAs > 0),
+       mapping = aes(x = strain_nice,
+                   y = total_RNAs_bud / total_RNAs)) +
+  geom_boxplot(aes(colour = mRNA,
+                   group = interaction(strain, replicate)
+                   ),
+               position = position_dodge(preserve = "single"),
+               outlier.size = 0.3) +
+  stat_summary(fun = mean,
+               geom = "crossbar",
+               colour = "grey20") +
+  geom_signif(
+    # this is for plotting significance comparisons
+    # plays badly with factors, so c(1,2) instead of c("WT", "ssd1∆")
+    comparisons = list(c(1,2)),
+    y_position = c(1.05),
+    map_signif_level = TRUE,
+    test = "t.test"
+  ) +
+  facet_grid(mRNA ~ cell_cycle_phase,
+             scales = "free_y") +
+  scale_colour_mrna() +
+  scale_y_continuous(limits = c(0, 1.2), 
+                     expand = c(0.02,0.02),
+                     breaks = c(0.0, 0.25, 0.5, 0.75, 1.0)) +
+  labs(y = "Proportion of mRNAs in bud",
+       x = "Strain") +
+  theme(panel.grid.major.y = element_line(colour = "grey80"),
+        axis.text.x = element_text(angle = 45, hjust = 1),
+        legend.position = "none",
+        panel.spacing.y = unit(5, "mm"))
+
+ggsave(here::here("figure","propmrna_by_cellcycle_phase_wtsec72_statbyreplicate.pdf"),
+       width = unit(5, "in"), height = unit(6, "in"),
        device=cairo_pdf)
 ```
 

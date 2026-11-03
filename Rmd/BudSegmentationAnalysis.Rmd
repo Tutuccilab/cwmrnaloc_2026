@@ -70,7 +70,6 @@ strain_table <-
     "YET919", "ΔMPT5", "mpt5∆",
     "YET563", "ΔSHE2", "she2∆",
     "YET572", "ΔSHE3", "she3∆",
-    "YET918", "ΔSUN4", "sun4∆",
     "YET921", "ΔSEC72","sec72∆"
     ) %>%
   mutate(strain_nice = as_factor(strain_nice))
@@ -121,6 +120,10 @@ mrna_alldata <- here::here("data", "budSegmentationData20260311.csv") %>%
          ) %>%
   rename_with(str_replace_all, pattern = "-", replacement = "_") %>%
   left_join(strain_table, by = c("strain", "condition"))
+
+# The sun4∆ strain (YET918) is in the data file but is excluded from this analysis
+mrna_alldata <- mrna_alldata %>%
+  filter(strain != "YET918")
 
 mrna_alldata
 ```
